@@ -1,23 +1,65 @@
 import React,{Component} from 'react';
 import './App.css';
-
-const tasks=[
-  {
-    id:1,
-    title:"Title1",
-    description:'Sending Request Response',
-    completed:false
-  }
-]
+import CustomModal from './components/Modal';
+import { Modal } from 'reactstrap';
+import axios from 'axios'
 class App extends Component{
 
   constructor(props){
     super(props);
     this.state={
+      modal:false,
       viewCompleted:false,
-      taskList:tasks,
-    }  
+      activeItem:{
+        title:"",
+        description:"",
+        completed:false
+      },
+      todoList:[]
+    };  
   }
+   componentDidMount(){
+        this.refreshList()
+   }
+   refreshList=()=>{
+    axios.get('http://127.0.0.1:8000/api/tasks/')
+    .then(res=>this.state({todoList:res.data}))
+    .catch(err=>console.log(err))
+   };
+
+  //Create Toggle Property
+  toggle = () =>{
+    this.setState({ modal: !this.state.modal });
+  };
+
+  //Submit HandleSubmit Property
+  handleSubmit = item =>{
+    this.toggle();
+    if(item.id){
+      axios.get(`http://127.0.0.1:8000/api/tasks/${item.id}/`,item)
+      .then(res=>this.refreshList())
+    }
+    axios.post('http://127.0.0.1:8000/api/tasks/',item)
+    .then(res=>this.refreshList())
+  };
+
+  //Delete HandleDelete Property
+  handleDelete = item =>{
+    axios.get(`http://127.0.0.1:8000/api/tasks/${item.id}/`)
+    .then(res=>this.refreshList())
+  };
+   
+  //CreateItem in Modal
+  createItem=()=>{
+    const item ={title:"",modal:!this.state.modal};
+    this.setState({activeItem:item,modal:!this.state.modal})
+  };
+
+  //editItem in Modal
+  createItem= item =>{
+    this.setState({activeItem:item,modal: !this.state.modal});
+  };
+
 
   displayCompleted = status =>{
     
@@ -48,7 +90,7 @@ class App extends Component{
   //Rendering items in the list(completed|incompleted)
   renderItems=()=>{
     const {viewCompleted}=this.state;
-    const newItems =this.state.taskList.filter(
+    const newItems =this.state.todoList.filter(
         item => item.completed == viewCompleted
     );
  
@@ -67,8 +109,8 @@ class App extends Component{
   };
   render(){
     return(
-      <main className='context'>
-        <h1 className='text-black text-uppercase text-center my-4'>Task Manager</h1>
+      <main className='content p-3 mb-2 bg-info'>
+        <h1 className='text-white text-uppercase text-center my-4'>Task Manager</h1>
         <div className='row'>
             <div className='col-md-6 mx-auto p-0'>
                <div className='card p-3'>
@@ -82,6 +124,10 @@ class App extends Component{
                </div>
             </div>
         </div>
+        { this.state.modal ?(
+          <Modal activeItem={this.state.activeItem} toggle={this.toggle}
+           onSave={this.handleSubmit}/>
+        ) : null}
       </main>
     )
   }
